@@ -18,3 +18,5 @@ dependencies:
       - rich
       - gradio
       - tifffile
+      - rawpy
+      - pillow-heif

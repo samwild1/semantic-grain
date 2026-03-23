@@ -18,7 +18,7 @@ from semantic_grain.config import (
     load_preset,
     save_preset,
 )
-from semantic_grain.io.loader import load_image
+from semantic_grain.io.loader import load_image, ALL_SUPPORTED_EXTENSIONS
 from semantic_grain.io.saver import save_tiff16, save_jpg
 from semantic_grain.pipeline import (
     run_segmentation,
@@ -44,9 +44,9 @@ _image_path: str | None = None
 
 def _get_sample_images() -> list[str]:
     if SAMPLES_DIR.exists():
-        exts = {".jpg", ".jpeg", ".png", ".tif", ".tiff"}
         return sorted(
-            str(p) for p in SAMPLES_DIR.iterdir() if p.suffix.lower() in exts
+            str(p) for p in SAMPLES_DIR.iterdir()
+            if p.suffix.lower() in ALL_SUPPORTED_EXTENSIONS
         )
     return []
 
