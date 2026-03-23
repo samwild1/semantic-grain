@@ -1,0 +1,52 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "semantic-grain"
+version = "0.1.0"
+description = "Context-aware film grain using AI semantic segmentation and FFT spectral synthesis"
+readme = "README.md"
+license = {text = "CC-BY-NC-ND-4.0"}
+requires-python = ">=3.11"
+authors = [
+    {name = "Sam Wild"},
+]
+keywords = [
+    "photography",
+    "film-grain",
+    "semantic-segmentation",
+    "computational-photography",
+    "black-and-white",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: End Users/Desktop",
+    "Topic :: Multimedia :: Graphics",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+dependencies = [
+    "torch",
+    "torchvision",
+    "transformers",
+    "opencv-python-headless",
+    "numpy",
+    "pillow",
+    "matplotlib",
+    "scipy",
+    "scikit-learn",
+    "pyyaml",
+    "rich",
+    "gradio",
+    "tifffile",
+]
+
+[project.scripts]
+semantic-grain = "semantic_grain.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/samwild1/semantic-grain"
+Repository = "https://github.com/samwild1/semantic-grain"
+Issues = "https://github.com/samwild1/semantic-grain/issues"

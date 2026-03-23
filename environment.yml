@@ -1,0 +1,20 @@
+name: sgrain
+channels:
+  - defaults
+dependencies:
+  - python=3.13
+  - pip
+  - pip:
+      - torch
+      - torchvision
+      - transformers
+      - opencv-python-headless
+      - numpy
+      - pillow
+      - matplotlib
+      - scipy
+      - scikit-learn
+      - pyyaml
+      - rich
+      - gradio
+      - tifffile
