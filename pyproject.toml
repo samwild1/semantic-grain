@@ -1,6 +1,6 @@
 [build-system]
 requires = ["setuptools>=68.0"]
-build-backend = "setuptools.backends._legacy:_Backend"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "semantic-grain"
@@ -28,21 +28,21 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
-    "torch",
-    "torchvision",
-    "transformers",
-    "opencv-python-headless",
-    "numpy",
-    "pillow",
-    "matplotlib",
-    "scipy",
-    "scikit-learn",
-    "pyyaml",
-    "rich",
-    "gradio",
-    "tifffile",
-    "rawpy",
-    "pillow-heif",
+    "torch>=2.0",
+    "torchvision>=0.15",
+    "transformers>=4.30",
+    "opencv-python-headless>=4.7",
+    "numpy>=1.24",
+    "pillow>=10.0",
+    "matplotlib>=3.7",
+    "scipy>=1.10",
+    "scikit-learn>=1.2",
+    "pyyaml>=6.0",
+    "rich>=13.0",
+    "gradio>=4.0",
+    "tifffile>=2023.2",
+    "rawpy>=0.19",
+    "pillow-heif>=0.13",
 ]
 
 [project.scripts]

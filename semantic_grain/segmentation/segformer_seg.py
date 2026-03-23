@@ -54,7 +54,7 @@ def segment_image(image_rgb: np.ndarray, inference_size: int = 640) -> np.ndarra
     if scale < 1.0:
         new_w = int(w_orig * scale)
         new_h = int(h_orig * scale)
-        pil_img = pil_img.resize((new_w, new_h), Image.BILINEAR)
+        pil_img = pil_img.resize((new_w, new_h), Image.Resampling.BILINEAR)
 
     inputs = processor(images=pil_img, return_tensors="pt")
     inputs = {k: v.to(_device) for k, v in inputs.items()}

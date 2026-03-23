@@ -109,6 +109,12 @@ cd semantic-grain
 pip install -e .
 ```
 
+> **GPU users:** `pip install torch` defaults to CPU-only on most platforms. For CUDA support, install PyTorch first from the [official index](https://pytorch.org/get-started/locally/), e.g.:
+> ```bash
+> pip install torch torchvision --index-url https://download.pytorch.org/whl/cu124
+> pip install -e .
+> ```
+
 > On first run, SegFormer-B5 weights (~380 MB) are downloaded automatically from Hugging Face.
 
 ---
