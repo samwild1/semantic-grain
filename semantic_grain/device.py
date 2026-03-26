@@ -72,6 +72,27 @@ def gpu_type() -> str:
     return _gpu_type
 
 
+def gpu_name() -> str:
+    """Human-readable GPU name, e.g. 'RTX 5060 Ti'."""
+    if _gpu_type == "cuda" and torch.cuda.is_available():
+        name = torch.cuda.get_device_name(0)
+        # Strip common prefix for brevity
+        for prefix in ("NVIDIA GeForce ", "NVIDIA ", "Apple "):
+            if name.startswith(prefix):
+                name = name[len(prefix):]
+        return name
+    if _gpu_type == "mps":
+        return "Apple Silicon"
+    return "none"
+
+
+def gpu_status_label() -> str:
+    """Label for the Use GPU checkbox showing GPU name."""
+    if _gpu_available:
+        return f"Use GPU ({gpu_name()})"
+    return "Use GPU (not available)"
+
+
 def default_use_gpu() -> bool:
     """The platform-appropriate default for the Use GPU checkbox."""
     return _use_gpu

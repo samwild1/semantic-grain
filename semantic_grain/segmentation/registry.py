@@ -26,7 +26,7 @@ METHODS: dict[str, SegmentationMethod] = {
         display_name="SegFormer-B5 (Best Quality)",
         model_id="nvidia/segformer-b5-finetuned-ade-640-640",
         backend="standard",
-        inference_size=640,
+        inference_size=1024,
         required_packages=(),
     ),
     "segformer_b2": SegmentationMethod(
@@ -34,7 +34,7 @@ METHODS: dict[str, SegmentationMethod] = {
         display_name="SegFormer-B2 (Balanced)",
         model_id="nvidia/segformer-b2-finetuned-ade-512-512",
         backend="standard",
-        inference_size=512,
+        inference_size=768,
         required_packages=(),
     ),
     "segformer_b0": SegmentationMethod(
@@ -50,7 +50,7 @@ METHODS: dict[str, SegmentationMethod] = {
         display_name="Mask2Former Swin-L (SOTA)",
         model_id="facebook/mask2former-swin-large-ade-semantic",
         backend="mask2former",
-        inference_size=640,
+        inference_size=1024,
         required_packages=("timm",),
     ),
 }

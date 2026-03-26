@@ -8,6 +8,9 @@ master-plan.txt
 # Claude Code settings
 .claude/
 
+# Gradio temp files
+.gradio_tmp/
+
 # Python
 __pycache__/
 *.py[cod]

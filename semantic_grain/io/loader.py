@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import io
 from pathlib import Path
 
 import numpy as np
@@ -64,12 +65,14 @@ def _load_raw(path: Path) -> np.ndarray:
 # ---------------------------------------------------------------------------
 def _load_pillow(path: Path) -> np.ndarray:
     """Load an image via Pillow and return float32 RGB in [0, 1]."""
-    with Image.open(path) as img:
-        img = ImageOps.exif_transpose(img)
-        img = img.convert("RGB")
-        # .copy() forces pixel data into memory so the file handle is released
-        # — avoids PermissionError on Windows when Gradio re-reads the temp file
-        arr = np.array(img, dtype=np.float32) / 255.0
+    # Read file bytes into memory first so the file handle is released
+    # immediately — avoids PermissionError on Windows where Gradio's
+    # ASGI server needs to re-read the same temp file.
+    data = path.read_bytes()
+    img = Image.open(io.BytesIO(data))
+    img = ImageOps.exif_transpose(img)
+    img = img.convert("RGB")
+    arr = np.array(img, dtype=np.float32) / 255.0
     return arr
 
 

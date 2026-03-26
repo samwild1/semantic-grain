@@ -42,6 +42,8 @@ from semantic_grain.device import (
     is_gpu_enabled,
     default_use_gpu,
     gpu_type,
+    gpu_name,
+    gpu_status_label,
     set_use_gpu,
 )
 
@@ -57,6 +59,7 @@ PRESETS_DIR = PROJECT_ROOT / "presets"
 # State held across callbacks (module-level to avoid Gradio pickle overhead)
 # ---------------------------------------------------------------------------
 _cache = ProcessingCache()
+_last_status: str = ""
 
 
 def _get_sample_images() -> list[str]:
@@ -170,8 +173,12 @@ def process_image(
         image_path = image_path.get("name", image_path.get("path", ""))
     image_path = str(image_path)
 
+    t_total = time.time()
+
     try:
+        t0 = time.time()
         img, masks = _load_and_segment(image_path, method_key=seg_method)
+        t_seg = time.time() - t0
     except Exception as e:
         return None, f"Error loading image: {e}"
 
@@ -207,7 +214,7 @@ def process_image(
         cache=_cache,
         params=params,
     )
-    elapsed = time.time() - t0
+    t_grain = time.time() - t0
 
     # Ensure RGB for Gradio display
     if result.ndim == 2:
@@ -223,7 +230,22 @@ def process_image(
         scale = display_size / max(h, w)
         result_rgb = cv2.resize(result_rgb, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_AREA)
 
-    return (result_rgb * 255).astype(np.uint8), f"Rendered in {elapsed:.2f}s"
+    global _last_status
+    elapsed = time.time() - t_total
+
+    if elapsed < 0.1 and _last_status:
+        # Everything was cached — show the last real render time
+        status = _last_status + " (cached)"
+    elif t_seg > 0.1:
+        # Fresh segmentation + grain render
+        status = f"{elapsed:.1f}s (segmentation {t_seg:.1f}s + grain {t_grain:.1f}s) — {w}×{h}"
+        _last_status = status
+    else:
+        # Cached segmentation, fresh grain render
+        status = f"{t_grain:.1f}s grain — {w}×{h}"
+        _last_status = status
+
+    return (result_rgb * 255).astype(np.uint8), status
 
 
 def export_image(
@@ -325,7 +347,7 @@ def create_ui() -> gr.Blocks:
                 with gr.Row():
                     gr.HTML("")  # spacer
                     use_gpu = gr.Checkbox(
-                        label="Use GPU",
+                        label=gpu_status_label(),
                         value=default_use_gpu(),
                         interactive=is_gpu_available(),
                     )
@@ -432,7 +454,7 @@ def create_ui() -> gr.Blocks:
             set_use_gpu(enabled)
             _cache.invalidate_all()
             if enabled:
-                return f"GPU enabled ({gpu_type()})"
+                return f"GPU enabled — {gpu_name()} ({gpu_type().upper()})"
             return "Using CPU"
 
         use_gpu.change(
