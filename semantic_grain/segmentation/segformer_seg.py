@@ -8,26 +8,21 @@ from PIL import Image
 from transformers import SegformerForSemanticSegmentation, SegformerImageProcessor
 
 
+from semantic_grain.device import get_device
+
 _model = None
 _processor = None
-_device = None
 
 MODEL_ID = "nvidia/segformer-b5-finetuned-ade-640-640"
 
 
-def _get_device() -> torch.device:
-    if torch.cuda.is_available():
-        return torch.device("cuda")
-    return torch.device("cpu")
-
-
 def _load_model() -> tuple[SegformerImageProcessor, SegformerForSemanticSegmentation]:
-    global _model, _processor, _device
+    global _model, _processor
     if _model is None:
-        _device = _get_device()
+        device = get_device()
         _processor = SegformerImageProcessor.from_pretrained(MODEL_ID)
         _model = SegformerForSemanticSegmentation.from_pretrained(MODEL_ID)
-        _model.to(_device)
+        _model.to(device)
         _model.eval()
     return _processor, _model
 
@@ -56,8 +51,9 @@ def segment_image(image_rgb: np.ndarray, inference_size: int = 640) -> np.ndarra
         new_h = int(h_orig * scale)
         pil_img = pil_img.resize((new_w, new_h), Image.Resampling.BILINEAR)
 
+    device = get_device()
     inputs = processor(images=pil_img, return_tensors="pt")
-    inputs = {k: v.to(_device) for k, v in inputs.items()}
+    inputs = {k: v.to(device) for k, v in inputs.items()}
 
     with torch.no_grad():
         outputs = model(**inputs)

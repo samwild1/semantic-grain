@@ -7,8 +7,8 @@ import numpy as np
 
 def apply_tone_curve(
     image: np.ndarray,
-    toe: float = 0.3,
-    shoulder: float = 0.3,
+    toe: float = 0.0,
+    shoulder: float = 0.0,
 ) -> np.ndarray:
     """Apply an S-shaped tone curve to a grayscale image.
 

@@ -45,6 +45,10 @@ dependencies = [
     "pillow-heif>=0.13",
 ]
 
+[project.optional-dependencies]
+mask2former = ["timm>=0.9"]
+all = ["timm>=0.9"]
+
 [project.scripts]
 semantic-grain = "semantic_grain.__main__:main"
 

@@ -17,19 +17,23 @@ from semantic_grain.color.bw_conversion import rgb_to_mono
 from semantic_grain.luminance.tone_curve import apply_tone_curve
 from semantic_grain.luminance.zone_system import compute_zone_masks
 from semantic_grain.grain.generator import generate_grain, modulate_by_luminance
-from semantic_grain.segmentation.segformer_seg import segment_image
+from semantic_grain.segmentation.backend import segment_image
 from semantic_grain.segmentation.class_mapping import map_segmentation_to_grain
 from semantic_grain.segmentation.skin_detector import detect_skin
-from semantic_grain.blending.mask_composer import soften_masks, compose_grain
+from semantic_grain.blending.mask_composer import soften_masks, compose_grain, compose_grain_cached
+from semantic_grain.cache import ProcessingCache, PipelineParams, determine_invalidation
 from semantic_grain.io.saver import save_tiff16
 
 
-def run_segmentation(image_rgb: np.ndarray) -> dict[str, np.ndarray]:
+def run_segmentation(
+    image_rgb: np.ndarray,
+    method_key: str = "segformer_b5",
+) -> dict[str, np.ndarray]:
     """Run segmentation + skin detection → hard binary masks per category.
 
     This is the expensive step — results should be cached per image.
     """
-    label_map = segment_image(image_rgb)
+    label_map = segment_image(image_rgb, method_key=method_key)
     masks = map_segmentation_to_grain(label_map)
 
     # Refine: split person mask into skin vs non-skin
@@ -146,6 +150,84 @@ def apply_grain(
             ch = apply_tone_curve(ch, toe, shoulder)
             result[:, :, c] = ch
         return np.clip(result, 0, 1).astype(np.float32)
+
+
+def apply_grain_cached(
+    image_rgb: np.ndarray,
+    hard_masks: dict[str, np.ndarray],
+    profiles: dict[str, GrainProfile],
+    global_strength: float,
+    toe: float,
+    shoulder: float,
+    bw_mix: tuple[float, float, float],
+    convert_bw: bool,
+    seed: int,
+    cache: ProcessingCache,
+    params: PipelineParams,
+) -> np.ndarray:
+    """Cache-aware grain pipeline — always full resolution.
+
+    Only recomputes stages whose inputs have changed since the last call.
+    Returns the same result as ``apply_grain(..., preview_size=None)`` but
+    much faster when only a few parameters changed.
+    """
+    stage, affected_cats = determine_invalidation(cache.prev_params, params)
+
+    if stage == 7 and cache.result is not None:
+        return cache.result
+
+    cache.invalidate_from_stage(stage, affected_cats)
+    cache.prev_params = params
+
+    # Stage 1: soft masks
+    if cache.soft_masks is None:
+        cache.soft_masks = soften_masks(hard_masks)
+
+    # Stage 2: luminance
+    if cache.luminance is None:
+        cache.luminance = rgb_to_mono(image_rgb, bw_mix)
+
+    # Stages 3-5: grain generation, modulation, blending
+    recompute_gen: set[str] | None = None
+    recompute_mod: set[str] | None = None
+
+    if stage <= 2:
+        # BW mix changed → luminance changed → all modulations stale
+        recompute_gen = set()  # empty = no FFT regeneration needed
+        recompute_mod = None   # None = re-modulate all
+    elif stage == 3:
+        recompute_gen = affected_cats
+        recompute_mod = affected_cats
+    elif stage == 4:
+        recompute_gen = set()
+        recompute_mod = affected_cats
+    else:
+        # Stage 5+ : no grain regeneration or modulation needed
+        recompute_gen = set()
+        recompute_mod = set()
+
+    if cache.blended_grain is None or stage <= 5:
+        compose_grain_cached(
+            cache.luminance, cache.soft_masks, profiles,
+            global_strength, seed, cache,
+            recompute_gen=recompute_gen,
+            recompute_mod=recompute_mod,
+        )
+
+    # Stage 6: tone curve + output
+    if convert_bw:
+        result = cache.luminance + cache.blended_grain
+        result = apply_tone_curve(result, toe, shoulder)
+        cache.result = np.clip(result, 0, 1).astype(np.float32)
+    else:
+        result = image_rgb.copy()
+        for c in range(3):
+            ch = result[:, :, c] + cache.blended_grain
+            ch = apply_tone_curve(ch, toe, shoulder)
+            result[:, :, c] = ch
+        cache.result = np.clip(result, 0, 1).astype(np.float32)
+
+    return cache.result
 
 
 def generate_mask_overlay(

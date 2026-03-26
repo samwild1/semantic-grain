@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import cv2
 import numpy as np
 
 from semantic_grain.config import GrainProfile, GRAIN_CATEGORIES
 from semantic_grain.grain.generator import generate_grain, modulate_by_luminance
+
+if TYPE_CHECKING:
+    from semantic_grain.cache import ProcessingCache
 
 
 def soften_masks(
@@ -76,4 +81,65 @@ def compose_grain(
 
         blended += mask * grain * global_strength
 
+    return blended
+
+
+def compose_grain_cached(
+    luminance: np.ndarray,
+    soft_masks: dict[str, np.ndarray],
+    profiles: dict[str, GrainProfile],
+    global_strength: float,
+    seed: int,
+    cache: ProcessingCache,
+    recompute_gen: set[str] | None,
+    recompute_mod: set[str] | None,
+) -> np.ndarray:
+    """Cache-aware grain composition.
+
+    Only regenerates FFT grains for regions in *recompute_gen*.
+    Only re-modulates for regions in *recompute_mod*.
+    Always re-blends (cheap weighted sum).
+
+    Args:
+        recompute_gen: Categories needing FFT regeneration, or None for all.
+        recompute_mod: Categories needing luminance re-modulation, or None for all.
+    """
+    h, w = luminance.shape
+    blended = np.zeros((h, w), dtype=np.float32)
+
+    for i, cat in enumerate(GRAIN_CATEGORIES):
+        if cat not in soft_masks:
+            continue
+
+        mask = soft_masks[cat]
+        if mask.max() < 1e-6:
+            continue
+
+        profile = profiles.get(cat, profiles["default"])
+
+        # Stage 3: generate raw grain (FFT) — use cache when valid
+        need_gen = (
+            recompute_gen is None
+            or cat in recompute_gen
+            or cat not in cache.raw_grains
+        )
+        if need_gen:
+            cache.raw_grains[cat] = generate_grain((h, w), profile, seed=seed + i)
+
+        # Stage 4: modulate by luminance — use cache when valid
+        need_mod = (
+            need_gen
+            or recompute_mod is None
+            or cat in recompute_mod
+            or cat not in cache.mod_grains
+        )
+        if need_mod:
+            cache.mod_grains[cat] = modulate_by_luminance(
+                cache.raw_grains[cat], luminance,
+                profile.shadow_boost, profile.highlight_rolloff,
+            )
+
+        blended += mask * cache.mod_grains[cat] * global_strength
+
+    cache.blended_grain = blended
     return blended
