@@ -12,6 +12,34 @@ This is not a filter. It is a computational emulsion.
 
 ---
 
+## Before | After | How It Sees
+
+<table>
+  <tr>
+    <td align="center"><strong>Original</strong></td>
+    <td align="center"><strong>Semantic Grain</strong></td>
+    <td align="center"><strong>Segmentation Map</strong></td>
+  </tr>
+  <tr>
+    <td><img src="examples/original.jpg" width="100%"></td>
+    <td><img src="examples/semantic_grain.jpg" width="100%"></td>
+    <td><img src="examples/segmentation_mask.jpg" width="100%"></td>
+  </tr>
+</table>
+
+The segmentation map shows how the model understands the scene. Each colored region receives grain with distinct spectral characteristics -- different size, clumpiness, shadow response, and highlight rolloff.
+
+| Color | Region | Grain character |
+|-------|--------|-----------------|
+| Peach | Skin | Fine, gentle, restrained in highlights |
+| Blue | Sky | Very fine, smooth, minimal shadow boost |
+| Green | Vegetation | Medium, moderate clumping |
+| Dark blue | Water | Fine, smooth, strong spectral slope |
+| Tan | Concrete | Coarse, pronounced, gritty |
+| Grey | Default | Medium, balanced |
+
+---
+
 ## Features
 
 - **Film stock grain presets** -- built-in grain structures inspired by Tri-X, HP5, T-Max, Portra, Acros, Delta 3200, FP4, and Double-X
@@ -168,7 +196,7 @@ semantic-grain/
 |   |-- color/                # B&W conversion
 |   `-- io/                   # Image loading + saving
 |-- presets/                  # YAML grain presets
-|-- examples/                 # Public example image
+|-- examples/                 # Figure and example images
 |-- scripts/                  # Utility scripts
 |-- environment.yml           # Conda environment
 `-- pyproject.toml            # Package metadata
